@@ -1,0 +1,57 @@
+name: Build Mevira Notes APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Get source code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            git zip unzip openjdk-17-jdk \
+            python3-pip autoconf libtool \
+            pkg-config zlib1g-dev libncurses5-dev \
+            libncursesw5-dev cmake libffi-dev libssl-dev
+
+      - name: Install Buildozer
+        run: |
+          python3 -m pip install --user --upgrade pip
+          python3 -m pip install --user buildozer cython==0.29.36
+
+      - name: Create Buildozer configuration
+        run: |
+          cat > buildozer.spec <<'EOF'
+          [app]
+          title = Mevira Notes
+          package.name = meviranotes
+          package.domain = org.chaurasiya
+          source.dir = .
+          source.include_exts = py,json,png,jpg,kv
+          version = 1.0
+          requirements = python3,kivy
+          orientation = portrait
+          fullscreen = 0
+
+          [buildozer]
+          log_level = 2
+          warn_on_root = 1
+          EOF
+
+      - name: Build Android APK
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          buildozer android debug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mevira-Notes-APK
+          path: bin/*.apk
+          if-no-files-found: error
